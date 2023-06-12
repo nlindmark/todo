@@ -75,6 +75,16 @@ class Task:
         # Return the string representation of the Task object
         return f'{self.id} {self.priority} {self.init_date.strftime(self.DATE_FORMAT)} {due_date_str} {self.state} {self.name}'
 
+    def to_string_short(self):
+        """
+        Converts a Task object into a string format.
+        """
+        # If due date is present, convert it to string; if not, use 'None'
+        due_date_str = self.due_date.strftime(self.DATE_FORMAT) if self.due_date else 'None'
+
+        # Return the string representation of the Task object
+        return f'{self.id} {self.priority} {due_date_str} {self.name}'
+
 
 class TodoList:
     """
@@ -199,7 +209,7 @@ class TodoList:
 
         # Print each task
         for task in tasks:
-            print(task.to_string())
+            print(task.to_string_short())
 
     def renumber_tasks(self):
         """
@@ -224,7 +234,7 @@ class TodoList:
 
         # Print the first 5 tasks
         for task in tasks[:5]:
-            print(task.to_string())
+            print(task.to_string_short())
 
     def list_completed_today(self):
         """
@@ -245,6 +255,7 @@ class TodoList:
         # Iterate over the tasks
         for task in self.tasks:
             # If a task with the given ID is found, postpone its due date
+            task_id = int(task_id)
             if task.id == task_id:
                 # If the duration is in weeks, postpone the due date by that number of weeks
                 if duration[-1].lower() == 'w':
@@ -398,7 +409,7 @@ class TodoShell(cmd.Cmd):
         parser.add_argument("name", nargs='+')
         parser.add_argument("-d", "--due_date",
                             help="Due date for the task. Format: 'today', 'tomorrow', '1w', or 'YYYY-MM-DD'. Default is '1w'",
-                            default='1w')
+                            default='0d')
         parser.add_argument("-p", "--priority", type=int, choices=range(1, 6),
                             help="Priority of the task. Must be an integer between 1 (highest) and 5 (lowest). Default is 5.",
                             default=5)
