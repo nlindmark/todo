@@ -292,6 +292,19 @@ class TodoList:
         # Inform the user that pruning is completed
         print('Pruned tasks.')
 
+    def modify_task(self, task_id, priority=None, due_date=None):
+        for task in self.tasks:
+            if task.id == int(task_id):  # Make sure to compare with the same type
+                # only change the value if a new one is provided
+                if priority is not None:
+                    task.priority = priority
+                if due_date is not None:
+                    due_date = self.calculate_due_date(due_date)
+                    task.due_date = due_date
+                self.write_tasks()
+                return
+        print(f"No task found with ID {task_id}")
+
 
 class TodoShell(cmd.Cmd):
     # Setting up the introductory message and prompt for the shell
@@ -381,6 +394,12 @@ class TodoShell(cmd.Cmd):
         self.todo_list.prune()
         self.todo_list.write_tasks()
 
+
+    def do_modify(self, arg):
+        'Modify an existing task: modify "TASK_ID" [-d DUE_DATE] [-p PRIO]'
+        task_id, due_date, priority = self.parse_modify_args(arg)
+        self.todo_list.modify_task(task_id, priority, due_date)
+
     def do_quit(self, arg):
         """
         Command to exit the shell.
@@ -415,6 +434,16 @@ class TodoShell(cmd.Cmd):
                             default=5)
 
         # Parse the arguments and return the task name, due date, and priority
+        args = parser.parse_args(shlex.split(arg))
+        return ' '.join(args.name), args.due_date, args.priority
+
+    def parse_modify_args(self, arg):
+        parser = argparse.ArgumentParser()
+        parser.add_argument("name", nargs='+')
+        parser.add_argument("-d", "--due_date", default=None,
+                            help="Due date for the task. Format: 'today', 'tomorrow', '1w', or 'YYYY-MM-DD'. If not provided, the due date remains unchanged.")
+        parser.add_argument("-p", "--priority", type=int, choices=range(1, 6), default=None,
+                            help="Priority of the task. Must be an integer between 1 (highest) and 5 (lowest). If not provided, the priority remains unchanged.")
         args = parser.parse_args(shlex.split(arg))
         return ' '.join(args.name), args.due_date, args.priority
 
@@ -471,6 +500,12 @@ if __name__ == '__main__':
         parser_p.add_argument('task_id', help='ID of the task to postpone')
         parser_p.add_argument('duration', help='Duration to postpone (example: 1w for one week)')
 
+        # Parser for 'modify' command
+        parser_m = subparsers.add_parser('modify', help='modify task')
+        parser_m.add_argument('task_id', help='ID of the task to modify')
+        parser_m.add_argument('-d', '--due_date')
+        parser_m.add_argument('-p', '--priority', type=int, choices=range(1, 6), default=5)
+
         # Parse command line arguments
         args = parser.parse_args()
 
@@ -505,9 +540,11 @@ if __name__ == '__main__':
             todo_list.renumber_tasks()
         elif args.command == 'top':  # handle 'top' command
             todo_list.top_tasks()
-        if args.command == 'completed':  # handle 'c' command
+        elif args.command == 'modify':
+            todo_list.modify_task(args.task_id, args.due_date, args.priority)
+        elif args.command == 'completed':  # handle 'c' command
             todo_list.list_completed_today()
-        if args.command == 'postpone':
+        elif args.command == 'postpone':
             todo_list.postpone_task(args.task_id, args.duration)
     else:
         # If no command line arguments are passed, start the command line shell
